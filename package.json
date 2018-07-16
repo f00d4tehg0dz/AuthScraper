@@ -1,0 +1,19 @@
+{
+  "name": "authscraper",
+  "version": "1.0.0",
+  "description": "Testing puppeteer logins",
+  "main": "test.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Puppeteer",
+    "login",
+    "control"
+  ],
+  "author": "DJM",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^1.6.0"
+  }
+}
