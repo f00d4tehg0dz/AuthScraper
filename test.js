@@ -11,7 +11,7 @@ const logPassField = '[name="password"]';
 //const logPassField = '#login-passwd';
 
 const puppeteer = require('puppeteer');
-const screenshot = 'yahoo.png';
+const screenshot = 'yahoo.jpg';
 (async () => {
     try {
   const browser = await puppeteer.launch({headless: false});
@@ -32,18 +32,25 @@ const screenshot = 'yahoo.png';
   console.log("click commit2");
   await page.click('[name="verifyPassword"]')
 
-
-
+  console.log("waitForNav");
+  await page.waitForNavigation({waitUntil: 'networkidle2'})
+  
   console.log("goto portfolio");
   await page.goto('https://finance.yahoo.com/portfolio/p_0/view/v1',{waitUntil: 'networkidle2'})
   
   console.log("waitForNav");
   await page.waitForNavigation({waitUntil: 'networkidle2'})
-  
-  console.log("");
-  await page.screenshot({ path: screenshot })
+
+  console.log("saving screenshot");
+  await page.setViewport({width: 1440, height: 900 });
+  await page.screenshot({ path: screenshot,
+    fullpage: true,
+    type: 'jpeg',
+    quality: 50,
+    //  {clip: {x: 200, y: 800 }},
+    omitBackground: true })
   browser.close()
-  console.log('See screenshot: ' + screenshot)
+  console.log('See screenshot at: ' + screenshot)
     }
 catch (err){
     console .log ('omgomgomgomg sometihngs wromg>' + err)
