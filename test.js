@@ -1,86 +1,120 @@
 /**
- * @name Github
- *
- * @desc Logs into Github. Provide your username and password as environment variables when running the script, i.e:
- * `GITHUB_USER=myuser GITHUB_PWD=mypassword node github.js`
- *
+ * @name Puppeteer login for Yahoo
+ * @desc Logs into Yahoo pre-scraping. Usr/pwd should be passed in`
  */
+
+/* LOGIN DATA FIELDS
+* yahoo usr/pass will eventually be passed, These are defaults.
+*/
+let yahooUsr = 'webpropopuli@gmail.com';
+let yahooPwd = 'YFpwd1234yf';
 const logURL = 'https://login.yahoo.com';  // 'https://github.com/login'
-const logUserField = '#login-username';
-const logPassField = '[name="password"]';
-//const logPassField = '#login-passwd';
 
+let d2j = require('./dom-2-json');
 const puppeteer = require('puppeteer');
-const screenshot = 'yahoo.jpg';
-(async () => {
-    try {
-  const browser = await puppeteer.launch({headless: false});
-  const page = await browser.newPage();
+const cheerio = require('cheerio');
 
-  console.log("goto login");
+async function runThisThing() {
+  const browser = await puppeteer.launch({
+    ignoreHTTPSErrors: true,
+    headless: true
+  });
+
+  const pages = await browser.pages();
+  const page = pages[0];
+  
+  console.log('**SCRAPER: Connecting to YAHOO...');
   await page.goto(logURL)
-
-  console.log("wait login");
-  await page.type(logUserField, 'webpropopuli@gmail.com')  //<input type="text" name="login" id="login_field"... >
-
-  await page.click('[name="signin"]')  //<input type="submit" name="commit" value="Sign in" …">
   
-  await page.waitFor(logPassField, 5000);
+  // dom element selectors
+  const USERNAME_SELECTOR = '#login-username';
+  const PASSWORD_SELECTOR = '#login-passwd';
+  const BUTTON_SELECTOR1_NAME = '[name="signin"]';
+  const BUTTON_SELECTOR2_PASS = '[name="verifyPassword"]';
 
-  await page.type(logPassField, 'YFpwd1234yf')
-
-  console.log("click commit2");
-  await page.click('[name="verifyPassword"]')
-
-  console.log("waitForNav");
-  await page.waitForNavigation({waitUntil: 'networkidle2'})
+  console.log('**SCRAPER: Authenticating with YAHOO...');
+  await page.click(USERNAME_SELECTOR);
+  await page.keyboard.type(yahooUsr);  //<input type="text" name="login" id="login_field"... >
+  await page.click(BUTTON_SELECTOR1_NAME);  //<input type="submit" name="commit" value="Sign in" …">
   
-  console.log("goto portfolio");
-  await page.goto('https://finance.yahoo.com/portfolio/p_0/view/v1',{waitUntil: 'networkidle2'})
-  
-  console.log("waitForNav");
-  await page.waitForNavigation({waitUntil: 'networkidle2'})
+  await page.waitFor(PASSWORD_SELECTOR, 5000); // this form pops up after username click
+  await page.click(PASSWORD_SELECTOR);
+  await page.keyboard.type(yahooPwd)
+  await page.click(BUTTON_SELECTOR2_PASS);
 
+  await page.waitForNavigation({ waitUntil: 'networkidle2' })
+
+  console.log('**SCRAPER: Accessing YAHOO portfolio...');
+  await page.goto('https://finance.yahoo.com/portfolio/p_0/view/v1', { waitUntil: 'networkidle2' })
+
+
+
+  console.log('**SCRAPER: Munging data in strange ways...');
+  const html = await page.$eval('._1TagL', e => e.outerHTML);
+  const $ = cheerio.load(html);
+  
+  //console.log(html);
+  const posts = await page.$$eval('table._1TagL tbody tr[data-index] td._1_2Qy', (posts) => 
+    {
+      posts.forEach(x => {
+        //let jsonObj = toJSON(x);
+        //console.log(jsonObj);
+      });
+      return posts.map(post => post.innerHTML)
+    });
+    let n = 0;
+    posts.forEach(x => {
+      n++;
+      //console.log(`${n}: ${x}`);
+    });
+
+
+    // itemList[i] = {
+    //   symbol: symbol,
+    //   price: price
+    // }    
+
+  await getScreenshot(page);
+
+
+//* DJM ADD TO DATABASE HERE 
+
+  //await page.close();
+  await browser.close();
+} // fn
+
+
+// GET PUPPETEER SCREENSHOT
+async function getScreenshot(page) {
   console.log("saving screenshot");
-  await page.setViewport({width: 1440, height: 900 });
-  await page.screenshot({ path: screenshot,
+  const outFile = 'yahoo.jpg';
+
+ try {
+
+  //const title = await page.$('.gIc8M');
+  const title = await page.$('._1TagL');
+
+  const styles = await page.evaluate(el => window.getComputedStyle(el), title);
+
+  const clip = Object.assign({}, await title.boundingBox());
+  //clip.y += parseFloat(styles.marginTop) || -20;
+  //clip.x += parseFloat(styles.marginLeft) || -20;
+  clip.x = 0;
+  clip.y = 0;
+
+  await page.setViewport({ width: 1440, height: 900 });
+  const screenshot = await title.screenshot({ 
+    path: outFile,
     fullpage: true,
     type: 'jpeg',
-    quality: 50,
-    //  {clip: {x: 200, y: 800 }},
-    omitBackground: true })
-  browser.close()
-  console.log('See screenshot at: ' + screenshot)
-    }
-catch (err){
-    console .log ('omgomgomgomg sometihngs wromg>' + err)
+    quality: 60, 
+    omitBackground: true
+  });
+
+  console.log('**SCRAPER: Done.');
+  return;
+} // try
+catch(err) { console.log(`**SCRAPER error: ${err}`); }
 }
-})()
-
-//cookie code unused
-  //var cookies = await page.cookies();
-  //console.log('all cookies >>');
-  //console.log(cookies);
-
-  //let cookieVal = cookies[0];
-  //console.log('cookie val >>' + cookieVal);
-
-  //let arrVal = cookieVal.value.split('&');
-  //console.log('arr val >>' + arrVal);
-
-  //let theCookie='';
-  //arrVal.filter (x => { 
-    //  if(x.indexOf('s=') != -1)
-      //  theCookie = x.slice(2);
-      //else if(x.indexOf('d=') != -1)
-      //theCookie2 = x.slice(2);
-    //});
-  //console.log('theCookie>>' + theCookie); 
-
-//let logPass = 'https://login.yahoo.com/account/challenge/password?authMechanism=primary&display=login&yid=webpropopuli@gmail.com&done=https://www.yahoo.com/&sessionIndex=QQ--&acrumb=' + theCookie;
-//console.log("logpass>>" + logPass);
-//await page.goto(logPass);
-
-//await page.setCookie(cookies[0]);
-
-///await page.reload({'timeout' : '10'});
+//################
+runThisThing();
