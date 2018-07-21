@@ -10,7 +10,7 @@ let yahooUsr = 'webpropopuli@gmail.com';
 let yahooPwd = 'YFpwd1234yf';
 const logURL = 'https://login.yahoo.com';  // 'https://github.com/login'
 
-let d2j = require('./dom-2-json');
+//let d2j = require('./dom-2-json');
 const puppeteer = require('puppeteer');
 const cheerio = require('cheerio');
 
@@ -51,33 +51,45 @@ async function runThisThing() {
 
   console.log('**SCRAPER: Munging data in strange ways...');
   const html = await page.$eval('._1TagL', e => e.outerHTML);
-  const $ = cheerio.load(html);
-  
-  //console.log(html);
-  const posts = await page.$$eval('table._1TagL tbody tr[data-index] td._1_2Qy', (posts) => 
+  const $ = cheerio.load(html, 
     {
-      posts.forEach(x => {
-        //let jsonObj = toJSON(x);
-        //console.log(jsonObj);
-      });
-      return posts.map(post => post.innerHTML)
-    });
-    let n = 0;
-    posts.forEach(x => {
-      n++;
-      //console.log(`${n}: ${x}`);
-    });
+      //normalizeWhitespace: true,
+      xmlMode: false,
+      decodeEntities: true
+  });
+  const t2j = require('tabletojson');
+  const table = t2j.convert(html);
+//console.log(table);
+  let itemCnt=table[0].length;
+  let data = [];
+  for(let x = 0; x< itemCnt; x++)
+  {
+    el = table[0][x];
+    data.push( {
+      Symbol: el['Symbol'],
+      LastPrice : el['Last Price'],
+      Currency : el['Currency'],
+      ChangePrc : el['Change'],
+      ChangePct : el['% Chg'],
+      Volume : el['Volume'],
+      MarketTime: el['Market Time']
+    })
 
+  }
 
-    // itemList[i] = {
-    //   symbol: symbol,
-    //   price: price
-    // }    
-
-  await getScreenshot(page);
-
+  console.log(data);
 
 //* DJM ADD TO DATABASE HERE 
+model = new Model(stock);
+   
+model.save(function(err) {
+  if (err) {
+    console.log('Database err saving: ' + url);
+  }
+});
+
+//? todo convert time to MongoDate and remove '5' from changepct
+
 
   //await page.close();
   await browser.close();
