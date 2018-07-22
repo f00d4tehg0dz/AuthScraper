@@ -14,6 +14,11 @@
   "author": "DJM",
   "license": "ISC",
   "dependencies": {
-    "puppeteer": "^1.6.0"
+    "cheerio": "^1.0.0-rc.2",
+    "jsonframe-cheerio": "^3.0.1",
+    "mongo": "^0.1.0",
+    "mongoose": "^5.2.4",
+    "puppeteer": "^1.6.0",
+    "tabletojson": "^0.9.8"
   }
 }

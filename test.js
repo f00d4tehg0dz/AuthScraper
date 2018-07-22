@@ -13,6 +13,7 @@ const logURL = 'https://login.yahoo.com';  // 'https://github.com/login'
 //let d2j = require('./dom-2-json');
 const puppeteer = require('puppeteer');
 const cheerio = require('cheerio');
+require('./database');
 
 async function runThisThing() {
   const browser = await puppeteer.launch({
@@ -50,7 +51,8 @@ async function runThisThing() {
 
 
   console.log('**SCRAPER: Munging data in strange ways...');
-  const html = await page.$eval('._1TagL', e => e.outerHTML);
+  await page.waitFor('._1TagL ');
+  const html = await page.$eval('._1TagL ', e => e.outerHTML);
   const $ = cheerio.load(html, 
     {
       //normalizeWhitespace: true,
@@ -70,7 +72,7 @@ async function runThisThing() {
       LastPrice : el['Last Price'],
       Currency : el['Currency'],
       ChangePrc : el['Change'],
-      ChangePct : el['% Chg'],
+      ChangePct : parseInt(el['% Chg'], 10),
       Volume : el['Volume'],
       MarketTime: el['Market Time']
     })
@@ -80,13 +82,13 @@ async function runThisThing() {
   console.log(data);
 
 //* DJM ADD TO DATABASE HERE 
-model = new Model(stock);
+// model = new Model(stock);
    
-model.save(function(err) {
-  if (err) {
-    console.log('Database err saving: ' + url);
-  }
-});
+// model.save(function(err) {
+//   if (err) {
+//     console.log('Database err saving: ' + url);
+//   }
+// });
 
 //? todo convert time to MongoDate and remove '5' from changepct
 
