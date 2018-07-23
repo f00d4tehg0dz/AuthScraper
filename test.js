@@ -83,13 +83,15 @@ async function runThisThing() {
   console.log(data);
 
 //* Convert our objects into our Mongo schema 
- model = new Model(stock);
+
+//* DJM ADD TO DATABASE HERE 
+ snapshot = new Model(stock);
 db.Go();
-// model.save(function(err) {
-//   if (err) {
-//     console.log('Database err saving: ' + url);
-//   }
-// });
+snapshot.save(function(err) {
+  if (err) {
+    console.log('Database err saving: ' + url);
+  }
+});
 
 db.Stop();
 
