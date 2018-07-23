@@ -1,6 +1,6 @@
 {
     "name": "authscraper",
-    "version": "1.0.0",
+    "version": "1.2.0",
     "description": "Testing puppeteer logins",
     "main": "test.js",
     "scripts": {
@@ -10,8 +10,8 @@
     },
     "keywords": [
         "Puppeteer",
-        "login",
-        "control"
+        "scraping",
+        "MongoDB"
     ],
     "author": "DJM",
     "license": "ISC",
@@ -19,7 +19,6 @@
         "cheerio": "^1.0.0-rc.2",
         "jsonframe-cheerio": "^3.0.1",
         "mongo": "^0.1.0",
-        "mongoose": "^5.2.4",
         "puppeteer": "^1.6.0",
         "tabletojson": "^0.9.8"
     },

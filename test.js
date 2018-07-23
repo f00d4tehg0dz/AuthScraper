@@ -12,7 +12,7 @@ const logURL = 'https://login.yahoo.com';  // 'https://github.com/login'
 
 const puppeteer = require('puppeteer');
 const cheerio = require('cheerio');
-const db = require('./database');
+//const theDB = require('./database');
 
 async function runThisThing() {
   const browser = await puppeteer.launch({
@@ -50,7 +50,10 @@ async function runThisThing() {
 
 
   console.log('**SCRAPER: Munging data in strange ways...');
-  //*Grab main results <table> from the (single) portfolio on this page
+
+  //*
+  //* Grab main results <table> from the (single) portfolio on this page
+  //? need to handle multiple portfolios
   await page.waitFor('._1TagL ');
   const html = await page.$eval('._1TagL ', e => e.outerHTML);
   const $ = cheerio.load(html, {
@@ -59,13 +62,21 @@ async function runThisThing() {
       decodeEntities: true
     });
 
-//* Turn the table into json with all stocks
+    //? tbd. kill that popup on the Yahoo page
+  await getScreenshot(page);
+
+//*                 Turn the table into json with all stocks
   const t2j = require('tabletojson');
   const table = t2j.convert(html);
 
-//* Walk the json and create our object tree of all stocks
+//*
+//*                 Walk the json and create our object tree of all stocks
+//*
   let itemCnt=table[0].length;
   let data = [];
+  
+  const ScrapeTime = new Date().getTime();  // Capture time data was collected
+
   for(let x = 0; x< itemCnt; x++)
   {
     el = table[0][x];
@@ -73,56 +84,50 @@ async function runThisThing() {
       Symbol: el['Symbol'],
       LastPrice: (el['Last Price']),
       Currency : el['Currency'],
-      ChangePrc: parseFloat(el['Change']),
-      ChangePct : parseFloat(el['% Chg'], 10),
+      Change: {
+        Amt: parseFloat(el['Change']),
+        Pct: parseFloat(el['% Chg'], 10)
+        },
       Volume : parseFloat(el['Volume']),
       MarketTime: el['Market Time']
-    })
-  }
+      })
+    }
+  
+  //console.log(data[1]);
 
-  console.log(data);
 
-//* Convert our objects into our Mongo schema 
+//*
+//*                 Write to database
+//*
+var Mongo = require('mongodb').MongoClient;
+var dburl = 'mongodb://ScrapeLord:5Cr4P3l0rD@ds113179.mlab.com:13179/scraper1';
 
-//* DJM ADD TO DATABASE HERE 
- snapshot = new Model(stock);
-db.Go();
-snapshot.save(function(err) {
-  if (err) {
-    console.log('Database err saving: ' + url);
-  }
-});
+Mongo.connect(dburl, {useNewUrlParser: true }, function(err, db) {
 
-db.Stop();
-
-//? todo convert time to MongoDate and remove '5' from changepct
-
+    //if (err) throw err;
+    var dbo = db.db("scraper1");
+ 
+    //* Turn array into an object and use ScrapeTime as the db index value
+    const DATA = {_id: ScrapeTime, data};  
+    dbo.collection("snapshots").insertOne(DATA, function(err, res) {
+      console.log(`**SCRAPER: Snapshot saved (time: ${ScrapeTime})`);
+      //console.log(res);  // this makes for boring reading
+      db.close();
+      });
+    });
 
   //await page.close();
-  await browser.close();
+  browser.close();
 } // fn
 
 
 // GET PUPPETEER SCREENSHOT
 async function getScreenshot(page) {
-  console.log("saving screenshot");
   const outFile = 'yahoo.jpg';
 
  try {
-
-  //const title = await page.$('.gIc8M');
-  const title = await page.$('._1TagL');
-
-  const styles = await page.evaluate(el => window.getComputedStyle(el), title);
-
-  const clip = Object.assign({}, await title.boundingBox());
-  //clip.y += parseFloat(styles.marginTop) || -20;
-  //clip.x += parseFloat(styles.marginLeft) || -20;
-  clip.x = 0;
-  clip.y = 0;
-
   await page.setViewport({ width: 1440, height: 900 });
-  const screenshot = await title.screenshot({ 
+  const screenshot = await page.screenshot({ 
     path: outFile,
     fullpage: true,
     type: 'jpeg',
@@ -130,10 +135,10 @@ async function getScreenshot(page) {
     omitBackground: true
   });
 
-  console.log('**SCRAPER: Done.');
+  //console.log('**SCRAPER: Done.');
   return;
 } // try
-catch(err) { console.log(`**SCRAPER error: ${err}`); }
+catch(err) { console.log(`**SCRAPER error(yipes!): ${err}`); }
 }
 //################
 runThisThing();
