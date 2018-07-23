@@ -82,13 +82,13 @@ async function runThisThing() {
   console.log(data);
 
 //* DJM ADD TO DATABASE HERE 
-// model = new Model(stock);
+ snapshot = new Model(stock);
    
-// model.save(function(err) {
-//   if (err) {
-//     console.log('Database err saving: ' + url);
-//   }
-// });
+snapshot.save(function(err) {
+  if (err) {
+    console.log('Database err saving: ' + url);
+  }
+});
 
 //? todo convert time to MongoDate and remove '5' from changepct
 

@@ -2,7 +2,10 @@ var mongoose = require('mongoose');
 var dburl = 'mongodb://ScrapeLord:5Cr4P3l0rD@ds113179.mlab.com:13179/scraper1';
 //var dburl = 'mongodb://TeamGator:G4T0RD3VS@ds147544.mlab.com:47544/gators';
 
-mongoose.connect(dburl);
+mongoose.connect(dburl, function (err) {
+   if (err) throw err;
+  console.log('Successfully connected to remote DB');
+});
 
 mongoose.connection
 .on('connected', function() { console.log(`Mongoose CONNECT OK to ${dburl}`); })
@@ -37,6 +40,9 @@ var StockSchema = new mongoose.Schema({
     changepct: Number,
     currency: {type: String, default: '', uppercase: true},
     volume: Number,
-    mkttime: Date
+    dates: {
+      mktDate: Date,
+      scrapeDate: Date
+    }
   });
   module.exports = mongoose.model('Stocks', StockSchema);
