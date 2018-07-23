@@ -1,24 +1,31 @@
 {
-  "name": "authscraper",
-  "version": "1.0.0",
-  "description": "Testing puppeteer logins",
-  "main": "test.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [
-    "Puppeteer",
-    "login",
-    "control"
-  ],
-  "author": "DJM",
-  "license": "ISC",
-  "dependencies": {
-    "cheerio": "^1.0.0-rc.2",
-    "jsonframe-cheerio": "^3.0.1",
-    "mongo": "^0.1.0",
-    "mongoose": "^5.2.4",
-    "puppeteer": "^1.6.0",
-    "tabletojson": "^0.9.8"
-  }
+    "name": "authscraper",
+    "version": "1.0.0",
+    "description": "Testing puppeteer logins",
+    "main": "test.js",
+    "scripts": {
+        "build": "rimraf dist/ && babel ./ --out-dir dist/ --ignore ./node_modules,./.babelrc,./package.json,./npm-debug.log --copy-files",
+        "start": "npm run build && node dist/test.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "Puppeteer",
+        "login",
+        "control"
+    ],
+    "author": "DJM",
+    "license": "ISC",
+    "dependencies": {
+        "cheerio": "^1.0.0-rc.2",
+        "jsonframe-cheerio": "^3.0.1",
+        "mongo": "^0.1.0",
+        "mongoose": "^5.2.4",
+        "puppeteer": "^1.6.0",
+        "tabletojson": "^0.9.8"
+    },
+    "devDependencies": {
+        "babel-cli": "^6.26.0",
+        "babel-preset-es2015": "^6.24.1",
+        "rimraf": "^2.6.2"
+    }
 }

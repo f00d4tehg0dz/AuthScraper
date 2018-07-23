@@ -2,7 +2,9 @@ var mongoose = require('mongoose');
 var dburl = 'mongodb://ScrapeLord:5Cr4P3l0rD@ds113179.mlab.com:13179/scraper1';
 //var dburl = 'mongodb://TeamGator:G4T0RD3VS@ds147544.mlab.com:47544/gators';
 
-mongoose.connect(dburl);
+module.exports =  function Stop() {}
+module.exports =  function Go() {
+mongoose.connect(dburl, { useNewUrlParser: true });
 
 mongoose.connection
 .on('connected', function() { console.log(`Mongoose CONNECT OK to ${dburl}`); })
@@ -29,8 +31,9 @@ process.once('SIGUSR2', function() {
     process.kill(process.pid, 'SIGUSR2');
   });
 });
+} //fn
 
-var StockSchema = new mongoose.Schema({
+var _StockSchema = new mongoose.Schema({
     symbol: String,
     lastprice: Number,
     changeprc: Number,
@@ -39,4 +42,5 @@ var StockSchema = new mongoose.Schema({
     volume: Number,
     mkttime: Date
   });
-  module.exports = mongoose.model('Stocks', StockSchema);
+  module.exports = mongoose.model('Stocks', _StockSchema);
+

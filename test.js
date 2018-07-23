@@ -4,16 +4,15 @@
  */
 
 /* LOGIN DATA FIELDS
-* yahoo usr/pass will eventually be passed, These are defaults.
+* TBD: yahoo usr/pass will eventually be passed, These are defaults.
 */
 let yahooUsr = 'webpropopuli@gmail.com';
 let yahooPwd = 'YFpwd1234yf';
 const logURL = 'https://login.yahoo.com';  // 'https://github.com/login'
 
-//let d2j = require('./dom-2-json');
 const puppeteer = require('puppeteer');
 const cheerio = require('cheerio');
-require('./database');
+const db = require('./database');
 
 async function runThisThing() {
   const browser = await puppeteer.launch({
@@ -46,22 +45,25 @@ async function runThisThing() {
   await page.waitForNavigation({ waitUntil: 'networkidle2' })
 
   console.log('**SCRAPER: Accessing YAHOO portfolio...');
+  //* Load a specific potfolio. TBD: load all and give a choice
   await page.goto('https://finance.yahoo.com/portfolio/p_0/view/v1', { waitUntil: 'networkidle2' })
 
 
-
   console.log('**SCRAPER: Munging data in strange ways...');
+  //*Grab main results <table> from the (single) portfolio on this page
   await page.waitFor('._1TagL ');
   const html = await page.$eval('._1TagL ', e => e.outerHTML);
-  const $ = cheerio.load(html, 
-    {
-      //normalizeWhitespace: true,
+  const $ = cheerio.load(html, {
+      normalizeWhitespace: true,
       xmlMode: false,
       decodeEntities: true
-  });
+    });
+
+//* Turn the table into json with all stocks
   const t2j = require('tabletojson');
   const table = t2j.convert(html);
-//console.log(table);
+
+//* Walk the json and create our object tree of all stocks
   let itemCnt=table[0].length;
   let data = [];
   for(let x = 0; x< itemCnt; x++)
@@ -69,26 +71,27 @@ async function runThisThing() {
     el = table[0][x];
     data.push( {
       Symbol: el['Symbol'],
-      LastPrice : el['Last Price'],
+      LastPrice: (el['Last Price']),
       Currency : el['Currency'],
-      ChangePrc : el['Change'],
-      ChangePct : parseInt(el['% Chg'], 10),
-      Volume : el['Volume'],
+      ChangePrc: parseFloat(el['Change']),
+      ChangePct : parseFloat(el['% Chg'], 10),
+      Volume : parseFloat(el['Volume']),
       MarketTime: el['Market Time']
     })
-
   }
 
   console.log(data);
 
-//* DJM ADD TO DATABASE HERE 
-// model = new Model(stock);
-   
+//* Convert our objects into our Mongo schema 
+ model = new Model(stock);
+db.Go();
 // model.save(function(err) {
 //   if (err) {
 //     console.log('Database err saving: ' + url);
 //   }
 // });
+
+db.Stop();
 
 //? todo convert time to MongoDate and remove '5' from changepct
 
