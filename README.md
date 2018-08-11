@@ -10,3 +10,5 @@ Now the dotnet frontend can access the scraped data, display it and add it to it
 **TBD:**
 
 1. Pull up portfolio collection page, list all saved portfilios and use the selected one.
+2. Kill the Yahoo popup when found so the screenshot is unobstructed.
+
