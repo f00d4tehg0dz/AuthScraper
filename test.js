@@ -3,11 +3,12 @@
  * @desc Logs into Yahoo pre-scraping. Usr/pwd should be passed in`
  */
 
-/* LOGIN DATA FIELDS
+require('dotenv').config()  // get YAHOO login and dbconnect string from env
+/* 
 * TBD: yahoo usr/pass will eventually be passed, These are defaults.
 */
-let yahooUsr = 'webpropopuli@gmail.com';
-let yahooPwd = 'YFpwd1234yf';
+let yahooUsr = process.env.YAHOO_USR;
+let yahooPwd = process.env.YAHOO_PWD;
 const logURL = 'https://login.yahoo.com';  // 'https://github.com/login'
 
 const puppeteer = require('puppeteer');
@@ -17,7 +18,7 @@ const cheerio = require('cheerio');
 async function runThisThing() {
   const browser = await puppeteer.launch({
     ignoreHTTPSErrors: true,
-    headless: true
+    headless: false
   });
 
   const pages = await browser.pages();
@@ -100,7 +101,7 @@ async function runThisThing() {
 //*                 Write to database
 //*
 var Mongo = require('mongodb').MongoClient;
-var dburl = 'mongodb://ScrapeLord:5Cr4P3l0rD@ds113179.mlab.com:13179/scraper1';
+var dburl = process.env.DB_CONNECT;
 
 Mongo.connect(dburl, {useNewUrlParser: true }, function(err, db) {
 
