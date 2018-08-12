@@ -70,7 +70,6 @@ async function runThisThing() {
   const t2j = require('tabletojson');
   const table = t2j.convert(html);
 
-//*
 //*                 Walk the json and create our object tree of all stocks
 //*
   let itemCnt=table[0].length;
