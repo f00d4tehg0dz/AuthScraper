@@ -9,6 +9,13 @@ require('dotenv').config()  // get YAHOO login and dbconnect string from env
 */
 let yahooUsr = process.env.YAHOO_USR;
 let yahooPwd = process.env.YAHOO_PWD;
+let dbUrl = process.env.DB_CONNECT;
+
+if(yahooUsr === undefined 
+|| yahooPwd === undefined
+|| dbUrl    === undefined)
+  console.warn('Problem reading envvars. Please check the README')
+
 const logURL = 'https://login.yahoo.com';  // 'https://github.com/login'
 
 const puppeteer = require('puppeteer');
@@ -21,11 +28,15 @@ async function runThisThing() {
     headless: false
   });
 
+  const styl = 'font-size:16px; background:lightblue; color: black; text-shadow: 2px 2px 0 white'; // for console.log
+
   const pages = await browser.pages();
   const page = pages[0];
   
-  console.log('**SCRAPER: Connecting to YAHOO...');
+  console.log('%c **SCRAPER: Connecting to YAHOO...', 'background:blue; color: white;');
+  console.time('Await Yahoo...');
   await page.goto(logURL)
+  console.timeEnd('Await Yahoo...');
   
   // dom element selectors
   const USERNAME_SELECTOR = '#login-username';
@@ -33,7 +44,8 @@ async function runThisThing() {
   const BUTTON_SELECTOR1_NAME = '[name="signin"]';
   const BUTTON_SELECTOR2_PASS = '[name="verifyPassword"]';
 
-  console.log('**SCRAPER: Authenticating with YAHOO...');
+  console.log('**SCRAPER: Logging in to YAHOO...');
+console.time('Yahoo Login');
   await page.click(USERNAME_SELECTOR);
   await page.keyboard.type(yahooUsr);  //<input type="text" name="login" id="login_field"... >
   await page.click(BUTTON_SELECTOR1_NAME);  //<input type="submit" name="commit" value="Sign in" …">
@@ -42,13 +54,17 @@ async function runThisThing() {
   await page.click(PASSWORD_SELECTOR);
   await page.keyboard.type(yahooPwd)
   await page.click(BUTTON_SELECTOR2_PASS);
+console.timeEnd('Yahoo Login');
+console.time('next');
+  //await page.waitForNavigation({ waitUntil: 'networkidle2' })
+console.timeEnd('next');
 
-  await page.waitForNavigation({ waitUntil: 'networkidle2' })
 
   console.log('**SCRAPER: Accessing YAHOO portfolio...');
   //* Load a specific potfolio. TBD: load all and give a choice
+  console.time('await Finance page');
   await page.goto('https://finance.yahoo.com/portfolio/p_0/view/v1', { waitUntil: 'networkidle2' })
-
+  console.timeEnd('await Finance page');
 
   console.log('**SCRAPER: Munging data in strange ways...');
 
@@ -93,16 +109,15 @@ async function runThisThing() {
       })
     }
   
-  //console.log(data[1]);
+  console.table(data[1]);
 
 
 //*
 //*                 Write to database
 //*
 var Mongo = require('mongodb').MongoClient;
-var dburl = process.env.DB_CONNECT;
 
-Mongo.connect(dburl, {useNewUrlParser: true }, function(err, db) {
+Mongo.connect(dbUrl, {useNewUrlParser: true }, function(err, db) {
 
     //if (err) throw err;
     var dbo = db.db("scraper1");
