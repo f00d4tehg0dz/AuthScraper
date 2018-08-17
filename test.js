@@ -17,23 +17,28 @@ if(yahooUsr === undefined
   console.warn('Problem reading envvars. Please check the README')
 
 const logURL = 'https://login.yahoo.com';  // 'https://github.com/login'
-
+const assert = require('assert');
 const puppeteer = require('puppeteer');
 const cheerio = require('cheerio');
 //const theDB = require('./database');
 
 async function runThisThing() {
+  console.info("**Welcome to SCRAPER");
+  console.time('Launching headless browser...');
   const browser = await puppeteer.launch({
     ignoreHTTPSErrors: true,
     headless: false
   });
+  console.timeEnd('Launching headless browser...');
 
   const styl = 'font-size:16px; background:lightblue; color: black; text-shadow: 2px 2px 0 white'; // for console.log
 
+  console.time('Loading pages...')
   const pages = await browser.pages();
   const page = pages[0];
+  console.timeEnd('Loading pages...')
   
-  console.log('%c **SCRAPER: Connecting to YAHOO...', 'background:blue; color: white;');
+  console.log('**SCRAPER: Connecting to YAHOO...');
   console.time('Await Yahoo...');
   await page.goto(logURL)
   console.timeEnd('Await Yahoo...');
@@ -57,6 +62,7 @@ console.time('Yahoo Login');
 console.timeEnd('Yahoo Login');
 console.time('next');
   //await page.waitForNavigation({ waitUntil: 'networkidle2' })
+  await page.waitFor( '#uh-avatar', 5000 );
 console.timeEnd('next');
 
 
@@ -66,7 +72,7 @@ console.timeEnd('next');
   await page.goto('https://finance.yahoo.com/portfolio/p_0/view/v1', { waitUntil: 'networkidle2' })
   console.timeEnd('await Finance page');
 
-  console.log('**SCRAPER: Munging data in strange ways...');
+  console.log('**SCRAPER: Parsing through data...');
 
   //*
   //* Grab main results <table> from the (single) portfolio on this page
@@ -79,7 +85,7 @@ console.timeEnd('next');
       decodeEntities: true
     });
 
-    //? tbd. kill that popup on the Yahoo page
+    //? tbd. kill that popup on the Yahoo page before getting screenshot
   await getScreenshot(page);
 
 //*                 Turn the table into json with all stocks
@@ -107,35 +113,40 @@ console.timeEnd('next');
       Volume : parseFloat(el['Volume']),
       MarketTime: el['Market Time']
       })
+    //console.log(el);
     }
-  
-  console.table(data[1]);
-
 
 //*
 //*                 Write to database
 //*
-var Mongo = require('mongodb').MongoClient;
+const MongoClient = require('mongodb').MongoClient;
 
-Mongo.connect(dbUrl, {useNewUrlParser: true }, function(err, db) {
+console.time('Mongo insert');
+MongoClient.connect(dbUrl, {useNewUrlParser: true }, function(err, client) {
+    assert.equal(null, err);
+    console.log("Connected successfully to Mongo server");
 
-    //if (err) throw err;
-    var dbo = db.db("scraper1");
+    const db = client.db("scraper1");
  
     //* Turn array into an object and use ScrapeTime as the db index value
     const DATA = {_id: ScrapeTime, data};  
-    dbo.collection("snapshots").insertOne(DATA, function(err, res) {
-      console.log(`**SCRAPER: Snapshot saved (time: ${ScrapeTime})`);
-      //console.log(res);  // this makes for boring reading
-      db.close();
-      });
-    });
+ 
+    res = insertSnapshot(db, DATA, function() {client.close(); browser.close();}) 
+  });
+console.timeEnd('Mongo insert');
+} // fn runthisthing()
 
-  //await page.close();
-  browser.close();
-} // fn
+const insertSnapshot = function(db, DATA, callback) {
+  // Get the documents collection
+  const collection = db.collection('documents');
+  // Insert some documents
+  db.collection("snapshots").insertOne(DATA, function(err, result) {
+    assert.equal(err, null);
 
-
+    console.log(`**SCRAPER: Snapshot saved`);
+    callback(result);
+  });
+}
 // GET PUPPETEER SCREENSHOT
 async function getScreenshot(page) {
   const outFile = 'yahoo.jpg';
@@ -150,7 +161,6 @@ async function getScreenshot(page) {
     omitBackground: true
   });
 
-  //console.log('**SCRAPER: Done.');
   return;
 } // try
 catch(err) { console.log(`**SCRAPER error(yipes!): ${err}`); }
