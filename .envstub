@@ -1,0 +1,4 @@
+DB_CONNECT=mongodb://DBname:DBpassword@ds000000.mlab.com:99999/colectionName
+YAHOO_USR=useremail@whatever.com
+YAHOO_PWD=useryahoopassword
+#if you don't have a .ENV file locally, this is your starting point
