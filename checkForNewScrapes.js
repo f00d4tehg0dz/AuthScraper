@@ -16,7 +16,7 @@ async function runThisThing() {
   console.log("**SCRAPER: Connecting to DB...");
   const MongoClient = require("mongodb").MongoClient;
 
-  MongoClient.connect(
+  return MongoClient.connect(
     dbUrl,
     { useNewUrlParser: true },
     function(err, client) {
@@ -33,19 +33,25 @@ async function runThisThing() {
         docs.each(function(err, doc) {
           if (doc) {
             fCount++;
-            console.log(doc._id);
+            let date = new Date(doc._id);
+            console.log(date.toISOString());
           } else {
+            console.log(err);
           }
         });
       });
-      client.close();
-      console.log(`${fCount} items found this sweep`);
     }
-  );
+  ).then(client => {
+    client.close();
+    console.log(`${fCount} items found this sweep`);
+    console.log(`DONE1`);
 
-  console.log(`DONE`);
-  return;
+    return;
+  });
 } // fn runthisthing()
 
 //################
 runThisThing();
+{
+  console.log(`DONE2`);
+}
