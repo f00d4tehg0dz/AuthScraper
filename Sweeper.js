@@ -9,29 +9,51 @@ if (dbUrl === undefined)
 const assert = require("assert");
 let fCount = 0;
 
-var MongoClient = require("mongodb").MongoClient;
+const MongoClient = require("mongodb").MongoClient;
 
-function FindInColl() {
-  return MongoClient.connect(
+try {
+  MongoClient.connect(
     dbUrl,
-    { useNewUrlParser: true }
-  ).then(
-    function(client) {
+    { useNewUrlParser: true },
+    function(err, client) {
+      assert.equal(null, err);
       const db = client.db("scraper1");
-      const collection = db.collection("documents");
 
-      let arr = collection.find().toArray();
-      console.log(`arr size`, arr.length);
-      client.close();
-      return arr;
-    },
-    function(err) {
-      console.error("The promise was rejected", err, err.stack);
+      debugger;
+
+      //Step 1: declare promise
+      var myPromise = () => {
+        return new Promise((resolve, reject) => {
+          db.collection("snapshots")
+            .find()
+            .toArray(function(err, data) {
+              if (err) {
+                reject(err);
+              } else {
+                data.forEach(d => {
+                  console.groupCollapsed(d._id);
+                  d.data.forEach(i => console.warn(i.Symbol));
+                  console.groupEnd();
+                });
+                console.warn(`Found ${data.length} scapes in DB`);
+              }
+            });
+        });
+      };
+
+      //Step 2: async promise handler
+      var callMyPromise = async () => {
+        var result = await myPromise();
+        //anything here is executed after result is resolved
+        return result;
+      };
+
+      //Step 3: make the call
+      callMyPromise().then(function(result) {
+        client.close();
+      });
     }
-  );
+  ); //end mongo client
+} catch (e) {
+  console.error("The promise was rejected", e, e.stack);
 }
-
-FindInColl().then(items => {
-  console.log(items[0]);
-  return;
-});
