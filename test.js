@@ -27,8 +27,7 @@ async function runThisThing() {
   });
   console.timeEnd("Launching headless browser...");
 
-  const styl =
-    "font-size:16px; background:lightblue; color: black; text-shadow: 2px 2px 0 white"; // for console.log
+  const styl = "font-size:16px; background:lightblue; color: black; text-shadow: 2px 2px 0 white"; // for console.log
 
   console.time("Loading pages...");
   const pages = await browser.pages();
@@ -140,6 +139,7 @@ async function runThisThing() {
   console.timeEnd("Mongo insert");
 } // fn runthisthing()
 
+//* insertSnapshot()
 const insertSnapshot = function(db, DATA, callback) {
   // Get the documents collection
   const collection = db.collection("documents");
@@ -166,7 +166,8 @@ async function getScreenshot(page) {
     });
 
     return;
-  } catch (err) { // try
+  } catch (err) {
+    // try
     console.log(`**SCRAPER error(yipes!): ${err}`);
   }
 }
