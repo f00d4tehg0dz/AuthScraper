@@ -5,6 +5,8 @@
  * -remove them from the snapshots db
  *
  * This is PoC code to be rolled into MainApp startup and/or a button, the idea being that scraping might be a standalone process as well as something initiated by the main scraper.
+ 
+ 2019Feb: THIS IS NOW PART OF THE MAIN SCRAPER PROJECT AND THIS VERSION IS RETIRED> Renaming...
  **/
 
 // get dbconnect string from env
