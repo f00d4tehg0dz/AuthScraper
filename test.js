@@ -27,26 +27,26 @@ async function runThisThing() {
   });
   console.timeEnd("Launching headless browser...");
 
-  const styl = "font-size:16px; background:lightblue; color: black; text-shadow: 2px 2px 0 white"; // for console.log
+  console.time("SCRAPER: Loading pages...");
+  // const pages = await browser.pages();
+  // const page = pages[0];
+  const context = await browser.createIncognitoBrowserContext();
+  const page = await context.newPage();
+  console.timeEnd("SCRAPER: Loading pages...");
 
-  console.time("Loading pages...");
-  const pages = await browser.pages();
-  const page = pages[0];
-  console.timeEnd("Loading pages...");
+  console.log("**SCRAPER: Wait for Login page...");
 
-  console.log("**SCRAPER: Connecting to YAHOO...");
-  console.time("Await Yahoo...");
   await page.goto(logURL);
-  console.timeEnd("Await Yahoo...");
 
   // dom element selectors
   const USERNAME_SELECTOR = "#login-username";
   const PASSWORD_SELECTOR = "#login-passwd";
   const BUTTON_SELECTOR1_NAME = '[name="signin"]';
   const BUTTON_SELECTOR2_PASS = '[name="verifyPassword"]';
+  const MAIN_TABLE_ID = "#pf-detail-table"; //".W ";
 
   console.log("**SCRAPER: Logging in to YAHOO...");
-  console.time("Yahoo Login");
+  console.time(" TIMER: Yahoo Login");
   await page.click(USERNAME_SELECTOR);
   await page.keyboard.type(yahooUsr); //<input type="text" name="login" id="login_field"... >
   await page.click(BUTTON_SELECTOR1_NAME); //<input type="submit" name="commit" value="Sign in" …">
@@ -55,56 +55,70 @@ async function runThisThing() {
   await page.click(PASSWORD_SELECTOR);
   await page.keyboard.type(yahooPwd);
   await page.click(BUTTON_SELECTOR2_PASS);
-  console.timeEnd("Yahoo Login");
-  console.time("next");
-  //await page.waitForNavigation({ waitUntil: 'networkidle2' })
-  await page.waitFor("#uh-avatar", 5000);
-  console.timeEnd("next");
+
+  console.timeEnd(" TIMER: Yahoo Login");
+
+  await page.waitForNavigation({ waitUntil: "networkidle2" });
+  //console.time("next");
+  // await page.waitFor("#uh-avatar", 5000);  //not sure what this was
+  // console.timeEnd("next");
 
   console.log("**SCRAPER: Accessing YAHOO portfolio...");
   //* Load a specific potfolio. TBD: load all and give a choice
-  console.time("await Finance page");
+  console.time(" TIMER: await Finance page");
   await page.goto("https://finance.yahoo.com/portfolio/p_0/view/v1", {
     waitUntil: "networkidle2"
   });
-  console.timeEnd("await Finance page");
+  console.timeEnd(" TIMER: await Finance page");
 
   console.log("**SCRAPER: Parsing through data...");
 
   //*
   //* Grab main results <table> from the (single) portfolio on this page
-  //? need to handle multiple portfolios
-  await page.waitFor("._1TagL ");
-  const html = await page.$eval("._1TagL ", e => e.outerHTML);
+  //TBD need to handle multiple portfolios
+  await page.waitFor(MAIN_TABLE_ID);
+
+  const html = await page.$eval(MAIN_TABLE_ID, e => e.outerHTML);
+  if (html == undefined) console.log(`SCRAPE ERROR: Timedout waiting for selector ${MAIN_TABLE_ID} --> ${err}`);
+
   const $ = cheerio.load(html, {
     normalizeWhitespace: true,
     xmlMode: false,
     decodeEntities: true
   });
 
-  //? tbd. kill that popup on the Yahoo page before getting screenshot
+  /**********************
+   * March UPDATE
+   *
+   * table class is W(100%)
+   * each table row is class simpTblRow
+   * wrapping div is class pf-detail-table
+   */
+  //* Timestamp will be used as DB id:
+  const ScrapeTime = new Date().getTime();
+
+  //* Might save this to the DB as well ??
   await getScreenshot(page);
 
-  //*                 Turn the table into json with all stocks
+  //* Turn the table into json with all stocks
   const t2j = require("tabletojson");
   const table = t2j.convert(html);
 
-  //*                 Walk the json and create our object tree of all stocks
-  //*
+  //* Walk the json and create our object tree of all stocks\
   let itemCnt = table[0].length;
+  console.log("Portfolio itemCnt =", itemCnt);
   let data = [];
-
-  const ScrapeTime = new Date().getTime(); // Capture time data was collected
 
   for (let x = 0; x < itemCnt; x++) {
     el = table[0][x];
+    //console.log(el);
     data.push({
       Symbol: el["Symbol"],
       LastPrice: el["Last Price"],
       Currency: el["Currency"],
       Change: {
         Amt: parseFloat(el["Change"]),
-        Pct: parseFloat(el["% Chg"], 10)
+        Pct: parseFloat(el["Chg %"], 10)
       },
       Volume: parseFloat(el["Volume"]),
       MarketTime: el["Market Time"]
@@ -117,41 +131,38 @@ async function runThisThing() {
   //*
   const MongoClient = require("mongodb").MongoClient;
 
-  console.time("Mongo insert");
-  MongoClient.connect(
-    dbUrl,
-    { useNewUrlParser: true },
-    function(err, client) {
-      assert.equal(null, err);
-      console.log("Connected successfully to Mongo server");
+  MongoClient.connect(dbUrl, { useNewUrlParser: true }, function(err, client) {
+    assert.equal(null, err);
+    console.log("Connected successfully to Mongo server");
 
-      const db = client.db("scraper1");
+    //* add Snapshot Image file to db
+    const fs = require("fs");
+    const imgData = fs.readFileSync("./yahoo.jpg");
+    //tbd handle errors
 
-      //* Turn array into an object and use ScrapeTime as the db index value
-      const DATA = { _id: ScrapeTime, data };
+    //* Save complete snapshot using ScrapeTime as the db index value
+    const DATA = { _id: ScrapeTime, data, imgData };
 
-      res = insertSnapshot(db, DATA, function() {
-        client.close();
-        browser.close();
-      });
-    }
-  );
-  console.timeEnd("Mongo insert");
+    const db = client.db("scraper1");
+    res = insertSnapshot(db, DATA, function() {
+      client.close();
+      browser.close();
+    });
+  });
 } // fn runthisthing()
 
 //* insertSnapshot()
 const insertSnapshot = function(db, DATA, callback) {
-  // Get the documents collection
-  const collection = db.collection("documents");
-  // Insert some documents
-  db.collection("snapshots").insertOne(DATA, function(err, result) {
+  // Add doc to db
+  db.collection("snapshots").insertOne(DATA, (err, result) => {
     assert.equal(err, null);
 
     console.log(`**SCRAPER: Snapshot saved`);
     callback(result);
   });
 };
-// GET PUPPETEER SCREENSHOT
+
+//* GET PUPPETEER SCREENSHOT
 async function getScreenshot(page) {
   const outFile = "yahoo.jpg";
 
@@ -161,14 +172,14 @@ async function getScreenshot(page) {
       path: outFile,
       fullpage: true,
       type: "jpeg",
-      quality: 60,
+      quality: 50,
       omitBackground: true
     });
 
     return;
   } catch (err) {
-    // try
-    console.log(`**SCRAPER error(yipes!): ${err}`);
+    console.log(`**SCRAPER error saving screenshop: ${err}`);
+    return;
   }
 }
 //################
