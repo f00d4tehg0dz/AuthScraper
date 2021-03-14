@@ -2,10 +2,10 @@
   "name": "authscraper",
   "version": "1.2.0",
   "description": "Testing puppeteer logins",
-  "main": "test.js",
+  "main": "scrape.js",
   "scripts": {
     "build": "rimraf dist/ && babel ./ --out-dir dist/ --ignore ./node_modules,./.babelrc,./package.json,./npm-debug.log --copy-files",
-    "start": "npm run build && node dist/test.js",
+    "start": "npm run build && node dist/scrape.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -21,6 +21,8 @@
     "dotenv": "^6.0.0",
     "mongodb": "^3.1.3",
     "puppeteer": "^1.7.0",
+    "puppeteer-extra": "^3.1.17",
+    "puppeteer-extra-plugin-stealth": "^2.7.5",
     "tabletojson": "^0.9.8"
   },
   "devDependencies": {

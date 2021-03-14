@@ -15,27 +15,39 @@ if (yahooUsr === undefined || yahooPwd === undefined || dbUrl === undefined)
 const logURL = "https://login.yahoo.com";
 const assert = require("assert");
 const puppeteer = require("puppeteer");
+const puppeteerExtra = require('puppeteer-extra');
+const pluginStealth = require('puppeteer-extra-plugin-stealth');
+puppeteerExtra.use(pluginStealth());
 const cheerio = require("cheerio");
 //const theDB = require('./database');
+const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.75 Safari/537.36';
 
 async function runThisThing() {
   console.info("**Welcome to SCRAPER");
   console.time("Launching headless browser...");
   const browser = await puppeteer.launch({
     ignoreHTTPSErrors: true,
-    headless: false
+    args: ['--no-sandbox'],
+    headless: true,
   });
+  
   console.timeEnd("Launching headless browser...");
 
   console.time("SCRAPER: Loading pages...");
+  //Randomize User agent or Set a valid one
+  const userAgent = randomUseragent.getRandom();
+  const UA = userAgent || USER_AGENT;
+  const page = await browser.newPage();
   // const pages = await browser.pages();
   // const page = pages[0];
+  
   const context = await browser.createIncognitoBrowserContext();
   const page = await context.newPage();
   console.timeEnd("SCRAPER: Loading pages...");
 
   console.log("**SCRAPER: Wait for Login page...");
-
+  await page.setUserAgent(UA);
+  await page.setJavaScriptEnabled(true);
   await page.goto(logURL);
 
   // dom element selectors
@@ -58,8 +70,8 @@ async function runThisThing() {
 
   console.timeEnd(" TIMER: Yahoo Login");
 
-  await page.waitForNavigation({ waitUntil: "networkidle2" });
-  //console.time("next");
+  // await page.waitForNavigation({ waitUntil: "networkidle2" });
+  // console.time("next");
   // await page.waitFor("#uh-avatar", 5000);  //not sure what this was
   // console.timeEnd("next");
 
@@ -110,8 +122,9 @@ async function runThisThing() {
   let data = [];
 
   for (let x = 0; x < itemCnt; x++) {
-    el = table[0][x];
-    //console.log(el);
+    
+    const el = table[0][x];
+    // console.log(table[0][x]);
     data.push({
       Symbol: el["Symbol"],
       LastPrice: el["Last Price"],
@@ -123,7 +136,7 @@ async function runThisThing() {
       Volume: parseFloat(el["Volume"]),
       MarketTime: el["Market Time"]
     });
-    //console.log(el);
+    // console.log(el);
   }
 
   //*
@@ -143,8 +156,8 @@ async function runThisThing() {
     //* Save complete snapshot using ScrapeTime as the db index value
     const DATA = { _id: ScrapeTime, data, imgData };
 
-    const db = client.db("scraper1");
-    res = insertSnapshot(db, DATA, function() {
+    const db = client.db("YahooFinance");
+    const res = insertSnapshot(db, DATA, function() {
       client.close();
       browser.close();
     });
@@ -154,7 +167,7 @@ async function runThisThing() {
 //* insertSnapshot()
 const insertSnapshot = function(db, DATA, callback) {
   // Add doc to db
-  db.collection("snapshots").insertOne(DATA, (err, result) => {
+  db.collection("stocks").insertOne(DATA, (err, result) => {
     assert.equal(err, null);
 
     console.log(`**SCRAPER: Snapshot saved`);
@@ -165,7 +178,6 @@ const insertSnapshot = function(db, DATA, callback) {
 //* GET PUPPETEER SCREENSHOT
 async function getScreenshot(page) {
   const outFile = "yahoo.jpg";
-
   try {
     await page.setViewport({ width: 1440, height: 900 });
     const screenshot = await page.screenshot({
